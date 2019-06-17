@@ -1,0 +1,1 @@
+gcc redesocial.c -o exec -g
