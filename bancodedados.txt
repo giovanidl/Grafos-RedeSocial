@@ -1,21 +1,9 @@
-20
-giovannoni
-19
-sao paulo
+	  0   1   2   3
 
-15
-giovani 
-21
-pira
+0    -1   x  -1  -1
 
-14
-tamiris
-21
-pira
+1     x  -1  -1  -1
 
-2
-flavio 
-35
-pirassununga
+2    -1  -1  -1  10
 
-
+3	 -1  -1  -1  -1

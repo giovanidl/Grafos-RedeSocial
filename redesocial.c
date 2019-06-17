@@ -62,8 +62,8 @@ void menuInicial(){
 void menuSecundario(){
 	printf("0 para ver solicitacoes\n");
 	printf("1 para enviar solicitacao de amizade\n");
-	printf("2 para recomendar amigos\n");
-	printf("3 para ver solicitacoes em aberto\n");
+	printf("2 para ver solicitacoes em aberto\n");
+	printf("3 para recomendar amigos\n");
 	printf("4 para detectar falsos amigos\n");
 	printf("5 para recomendar namorado\n");
 	printf("7 para deslogar\n");
@@ -197,12 +197,20 @@ int login(Grafo* G){
 
 
 
-void printaSolicitacao(Grafo* G, int indiceLogado, int indiceSolicitacao){
+void printaSolicitacao(Grafo* G, int indexLogado, int indiceSolicitacao){
 	printf("Quero ser seu amigo:\n");
 	printf("Nome: %s\n", G->rede[indiceSolicitacao].nomeUsuario);
 	printf("Similaridade a voce: ");
-	printf("%d\n", avaliaSimilaridade(G->rede[indiceLogado], G->rede[indiceSolicitacao]));
+	printf("%d\n", avaliaSimilaridade(G->rede[indexLogado], G->rede[indiceSolicitacao]));
 
+}
+void aceitarSolicitacao(Grafo* G, char* nome, int indexLogado){
+	for(int i = 0; i < MAXV; i ++){
+		if(G->adj[indexLogado][i] && !strcmp(G->rede[i].nomeUsuario, nome)){
+			G->adj[indexLogado][i] = avaliaSimilaridade(G->rede[indexLogado], G->rede[i]);
+			G->adj[i][indexLogado] = avaliaSimilaridade(G->rede[indexLogado], G->rede[i]);		}
+	}
+	printf("Solicitacao aceita\n");
 }
 
 void veSolicitacoesAmizade(Grafo* G, int indexLogado){
@@ -216,21 +224,53 @@ void veSolicitacoesAmizade(Grafo* G, int indexLogado){
 	}
 	if(!solicitacoes){
 		printf("Voce nao tem nenhuma solicitacao\n");
+		return;
 	}
+	printf("Voce deseja aceitar alguma solicitacao?\n");
+	printf("Digite 0 se sim ou 1 caso contrario\n");
+	getchar();
+	char nome[100];
+	int escolha;
+	scanf("%d",&escolha);
+	getchar();
+	switch (escolha){
+		case 0:
+			printf("Digite o nome de usuario da pessoa\n");
+			setbuf(stdin, NULL);
+			scanf("%[^\n]",nome);
+			//scanf("%*s");
+			getchar();
+			aceitarSolicitacao(G, nome, indexLogado);
+			return;
+			break;
+		case 1:
+			return;
+			break;
+		default:
+			printf("Opcao nao valida\n");
+			break;
+		scanf("%d",&escolha);	
+		getchar();
+	}
+
 }
 
-void printaRede(Grafo* G){
+void printaRede(Grafo* G, int indexLogado){
 	for (int i = 0; i < MAXV; i++){
 		if(G->rede[i].index != -1){
-			printaUsuario(G->rede[i]);
+			if(G->rede[i].index != indexLogado)
+				printaUsuario(G->rede[i]);
+
+			printf("vtnc esse calho: %d\n", indexLogado);
+			printf("afdjasasfss: %d\n", G->rede[i].index);
 		}
 	}
 }
 
-int enviaSolicitacao(Grafo* G, int indiceLogado){
+int enviaSolicitacao(Grafo* G, int indexLogado){
 	printf("Para quem voce deseja enviar uma solicitacao?\n");
 
-	printaRede(G);
+	printaRede(G, indexLogado);
 	char nome[100];
 	printf("Digite o Nome de Usuario da Pessoa:\n");
 	getchar();
@@ -239,13 +279,26 @@ int enviaSolicitacao(Grafo* G, int indiceLogado){
 
 	for(int i = 0; i < MAXV; i++){
 		if(!strcmp(G->rede[i].nomeUsuario, nome)){
-			G->adj[i][indiceLogado] = 10; // enviou solicitação
+			G->adj[i][indexLogado] = 10; // enviou solicitação
 			return 0;
 		}
 	}
 	printf("Nao ha nenhuma pessoa com esse nome\n");
 	return 1;
 
+}
+void veSolicitacoesEmAberto(Grafo* G, int indexLogado){
+	int n = 0;
+	for (int i = 0; i < MAXV; i++){
+		if(G->adj[i][indexLogado] == 10){
+			n++;
+			printf("Solicitacoes em Aberto:\n");
+			printf("Nome de Usuario: %s\n", G->rede[i].nomeUsuario);
+			printf("Indice de Similaridade entre voces: %d\n", avaliaSimilaridade(G->rede[i], G->rede[indexLogado]));
+		}
+	}
+	if(!n)
+		printf("Voce nao tem solicitacoes de amizade em aberto\n");
 }
 
 void perfil(Grafo* G, int indexLogado){
@@ -258,6 +311,7 @@ void perfil(Grafo* G, int indexLogado){
 
 			case 0: // ver solicitacoes de amizade (informar as chances da amizade ser verdadeira)
 				veSolicitacoesAmizade(G, indexLogado);
+				menuSecundario();
 				break;
 
 			case 1: // enviar solicitacao
@@ -267,10 +321,13 @@ void perfil(Grafo* G, int indexLogado){
 					menuSecundario();
 				break;
 
-			case 2: // recomendar amigos
+			case 2: // ver solicitacoes em aberto
+				veSolicitacoesEmAberto(G, indexLogado);
+				menuSecundario();
 				break;
 
-			case 3:	// ver solicitacoes em aberto
+			case 3:	// recomendar amigos
+				//recomendarAmigos();
 				break;
 
 			case 4:	// detectar falsos amigos
@@ -291,6 +348,31 @@ void perfil(Grafo* G, int indexLogado){
 	}
 
 }
+void criaTeste(Grafo* G){
+	G->numV = 2;
+	G->rede[0].index = 0;
+	strcpy(G->rede[0].nomeUsuario, "g");
+	G->rede[0].idade = 1;
+	G->rede[0].sexo = MASCULINO;
+	strcpy(G->rede[0].cidade, "g");
+	strcpy(G->rede[0].filmePreferido, "g");
+	strcpy(G->rede[0].time, "g");
+	G->rede[0].interesseEm = 1;
+	strcpy(G->rede[0].senha, "g");
+
+
+	G->rede[1].index = 1;
+	strcpy(G->rede[1].nomeUsuario, "h");
+	G->rede[1].idade = 1;
+	G->rede[1].sexo = MASCULINO;
+	strcpy(G->rede[1].cidade, "h");
+	strcpy(G->rede[1].filmePreferido, "h");
+	strcpy(G->rede[1].time, "h");
+	G->rede[1].interesseEm = 1;
+	strcpy(G->rede[1].senha, "h");
+
+
+}
 
 int main(){
 
@@ -300,6 +382,7 @@ int main(){
 	int logou = 0;
 	menuInicial();
 
+	criaTeste(G);
 	scanf("%d", &instrucao);
 	while(instrucao < 2){
 		switch (instrucao){
@@ -309,7 +392,7 @@ int main(){
 				menuInicial();
 				break;
 			case 1:// login
-				printaRede(G);
+				//printaRede(G);
 				while(indexLogado = login(G),indexLogado == -1){
 					printf("Senha incorreta. Tente novamente\n");
 				}
