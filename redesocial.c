@@ -53,12 +53,22 @@ int classificaIdade(Usuario U){
 	else if(U.idade >= 70) return 7;
 }
 
-void menu(){
+void menuInicial(){
 	printf("0 para cadastrar\n");
 	printf("1 para logar\n");
 	// ... continua
 }
 
+void menuSecundario(){
+	printf("0 para ver solicitacoes\n");
+	printf("1 para enviar solicitacao de amizade\n");
+	printf("2 para recomendar amigos\n");
+	printf("3 para ver solicitacoes em aberto\n");
+	printf("4 para detectar falsos amigos\n");
+	printf("5 para recomendar namorado\n");
+	printf("7 para deslogar\n");
+
+}
 
 int analisaIndex(Grafo* G){
 	for(int i = 0; i < G->numV; i++){
@@ -70,9 +80,14 @@ int analisaIndex(Grafo* G){
 	return G->numV;
 }
 
-void imprimeUsuario(Usuario U){
-	printf("Nome de Usuario: %s", U.nomeUsuario);
-	printf("Idade: %d", U.idade);
+void printaUsuario(Usuario U){
+	printf("||---------------------------------------------------||\n");
+	printf("Nome de Usuario: %s\n", U.nomeUsuario);
+	printf("Idade: %d\n", U.idade);
+	printf("Sexo: %d\n", U.sexo);
+	printf("Cidade: %s\n", U.cidade);
+	printf("Filme Preferido: %s\n", U.filmePreferido);
+	printf("Time: %s\n", U.time);
 	//... continua
 }
 
@@ -81,7 +96,7 @@ int avaliaSimilaridade(Usuario A, Usuario B){
 
 	if(classificaIdade(A) == classificaIdade(B))
 		similaridade++;
-	if(A.sexo == MASCULINO && B.sexo == MASCULINO)
+	if(A.sexo == B.sexo)
 		similaridade++;
 	if(!strcmp(A.cidade, B.cidade))
 		similaridade++;
@@ -155,6 +170,7 @@ int cadastrar(Grafo* G){
 int login(Grafo* G){
 
 	char nome[50];
+	getchar();
 	printf("Nome de Usuario:\n");
 	scanf("%[^\n]", nome);
 	getchar();
@@ -171,7 +187,7 @@ int login(Grafo* G){
 		char senha[50];
 		printf("Senha:\n");
 		scanf("%[^\n]", senha);
-		getchar();
+		//getchar();
 		if(!strcmp(senha, G->rede[indexAchado].senha)){
 			return indexAchado;
 		}
@@ -179,59 +195,99 @@ int login(Grafo* G){
 	return -1;	
 }
 
-void printaUsuarioSolicitacao(Grafo* G, int indice){
-	printf("Nome: %s", G->rede[indice].nomeUsuario);
-	printf("")
+
+
+void printaSolicitacao(Grafo* G, int indiceLogado, int indiceSolicitacao){
+	printf("Quero ser seu amigo:\n");
+	printf("Nome: %s\n", G->rede[indiceSolicitacao].nomeUsuario);
+	printf("Similaridade a voce: ");
+	printf("%d\n", avaliaSimilaridade(G->rede[indiceLogado], G->rede[indiceSolicitacao]));
+
 }
 
-void printaSolicitacao(){
-	printf("Quero ser seu amigo:");
-}
-
-veSolicitacoesAmizade(Grafo* G, indexLogado){
-	printf("Solicitações de amizade:\n")
-	for(int i = 0; i < G->MAXV){
+void veSolicitacoesAmizade(Grafo* G, int indexLogado){
+	printf("Solicitacoes de amizade:\n");
+	int solicitacoes = 0;
+	for(int i = 0; i < MAXV; i++){
 		if(G->adj[indexLogado][i] == 10){
-			printaSolicitacao();
+			solicitacoes++;
+			printaSolicitacao(G, indexLogado, i);
+		}
+	}
+	if(!solicitacoes){
+		printf("Voce nao tem nenhuma solicitacao\n");
+	}
+}
+
+void printaRede(Grafo* G){
+	for (int i = 0; i < MAXV; i++){
+		if(G->rede[i].index != -1){
+			printaUsuario(G->rede[i]);
 		}
 	}
 }
 
+int enviaSolicitacao(Grafo* G, int indiceLogado){
+	printf("Para quem voce deseja enviar uma solicitacao?\n");
+
+	printaRede(G);
+	char nome[100];
+	printf("Digite o Nome de Usuario da Pessoa:\n");
+	getchar();
+	scanf("%[^\n]", nome);
+	getchar();
+
+	for(int i = 0; i < MAXV; i++){
+		if(!strcmp(G->rede[i].nomeUsuario, nome)){
+			G->adj[i][indiceLogado] = 10; // enviou solicitação
+			return 0;
+		}
+	}
+	printf("Nao ha nenhuma pessoa com esse nome\n");
+	return 1;
+
+}
+
 void perfil(Grafo* G, int indexLogado){
 	int instrucaoPerfil;
+	getchar();
+	menuSecundario();
 	scanf("%d", &instrucaoPerfil);
-
 	while(instrucaoPerfil < 8){
 		switch (instrucaoPerfil){
 
 			case 0: // ver solicitacoes de amizade (informar as chances da amizade ser verdadeira)
 				veSolicitacoesAmizade(G, indexLogado);
-
 				break;
 
 			case 1: // enviar solicitacao
+				if(!enviaSolicitacao(G, indexLogado))
+					printf("Solicitacao enviada com sucesso\n");
+					printf("\n\n\n");
+					menuSecundario();
 				break;
 
 			case 2: // recomendar amigos
 				break;
 
-			case 3:	// recomendar namorado
+			case 3:	// ver solicitacoes em aberto
 				break;
 
 			case 4:	// detectar falsos amigos
 				break;
 
-			case 5:
+			case 5: // recomendar namorado
 				break;
 
 			case 6:
 				break;
 
 			case 7:	// deslogar
+				return;
 				break;
 
 		}
-
+		scanf("%d", &instrucaoPerfil);
 	}
 
 }
@@ -242,7 +298,7 @@ int main(){
 	G = criaGrafo();
 	int instrucao, indexLogado;
 	int logou = 0;
-	menu();
+	menuInicial();
 
 	scanf("%d", &instrucao);
 	while(instrucao < 2){
@@ -250,12 +306,16 @@ int main(){
 			case 0: // cadastrar
 				if(!cadastrar(G))
 					printf("Cadastro Realizado com Sucesso\n");
-				menu();
+				menuInicial();
 				break;
 			case 1:// login
-				while(indexLogado = login(G),indexLogado == -1);
+				printaRede(G);
+				while(indexLogado = login(G),indexLogado == -1){
+					printf("Senha incorreta. Tente novamente\n");
+				}
 				logou++;
 				perfil(G, indexLogado);
+				menuInicial();
 				break;
 			case 2:
 				printf("Sair;");
