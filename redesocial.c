@@ -1,4 +1,5 @@
 #include "redesocial.h"
+#include "fila.h"
 
 enum SEXO{
 	MASCULINO, FEMININO, TRANSSEXUAL, ABSTENCAO
@@ -7,6 +8,14 @@ enum SEXO{
 enum INTERESSE{
 	MASC, FEM, TRANS, MASCFEM, NENHUM, ABS
 };
+
+char TIMES[6][50] = {"Sao Paulo", "Palmeiras", "Corinthians", "Santos", "Flamengo", "Botafogo"};
+
+char FILMES[6][50] = {"Frozen", "Bastardos Inglorios", "Shrek", "Seven", "Avatar", "Titanic"};
+
+
+char CIDADES[6][50] = {"Piracicaba", "Sao Paulo", "Sao Carlos", "Pirassununga", "Limeira", "Campinas"};
+
 
 struct usuario{
 	int index; // se o index for -1 na rede significa que ele nao está la (excluido e podera ser sobrescrito)
@@ -61,6 +70,7 @@ void menuInicial(){
 	printf("---------- MENU PRINCIPAL ---------\n");
 	printf("0 para cadastrar\n");
 	printf("1 para logar\n");
+	printf("2 para sair\n");
 	// ... continua
 }
 
@@ -73,7 +83,8 @@ void menuSecundario(){
 	printf("4 para detectar falsos amigos\n");
 	printf("5 para recomendar namorado\n");
 	printf("6 para mostrar todos seus amigos (e tambem seus melhores amigos de acordo com a similaridade)\n");
-	printf("7 para deslogar\n");
+	printf("7 para mostrar pessoas que talvez voce conheca\n");
+	printf("8 para deslogar\n");
 
 }
 
@@ -418,7 +429,72 @@ void mostrarAmigos(Grafo* G, int indexLogado){
 
 }
 
-void perfil(Grafo* G, int indexLogado){
+int ehamigo(Grafo* G, int A, int B){
+	return (G->adj[A][B] != -1 && G->adj[A][B] != 10);
+}
+/*
+	Esta funcao aplicará uma BFS no Grafo G, encontrando as menores distancias entre pessoas não amigas
+	assim recomendando-as para o usuário logado
+*/
+int* talvezConheca(Grafo* G, Fila* F, int indexLogado){
+	int visitados[G->numV];
+	int* dist = (int*) malloc(sizeof(int)* G->numV);
+
+	for(int i = 0; i < G->numV; i++){
+		visitados[i] = 0;
+		dist[i] = -1;
+	}
+	int j = indexLogado;
+	dist[j] = 0;
+
+	entra(F, j);
+	visitados[j] = 1;
+
+
+	while(!estaVazia(F)){
+		for(int i = 0; i < G->numV; i++){
+			if(ehamigo(G,j, i) && visitados[i] == 0){
+				visitados[i] = 1;
+				if(dist[i] == -1){
+					dist[i] = dist[j] + 1;
+					entra(F, i);
+				}
+			}
+		}
+		sai(F);
+		j = proxFila(F);
+
+	}
+	/*
+	for(int i = 0; i < G->numV; i++){
+		printf("%d ", dist[i]);
+	}
+	printf("\n");
+	*/
+	return dist;
+
+}
+
+void recomendaTalvezConheca(Grafo* G, Fila* F, int indexLogado){
+	printf("Pessoas que talvez voce conheça\n");
+	int* dist = talvezConheca(G, F, indexLogado);
+	int achados = 0;
+	for (int i = 0; i < G->numV; i++){
+		if(dist[i] == 1){
+			achados++;
+			printf("||-----------------------------------------||\n");
+			printf("Nome de Usuario: %s\n", G->rede[i].nomeUsuario);
+			printf("Similaridade: %d\n", G->adj[indexLogado][i]);
+		}
+	}
+	if(!achados){
+		printf("Nao ha nenhuma pessoa na rede que talvez voce conheca\n");
+	}
+	if(dist != NULL)
+		free(dist);
+}
+
+void perfil(Grafo* G, Fila* F, int indexLogado){
 	int instrucaoPerfil;
 	getchar();
 	menuSecundario();
@@ -464,58 +540,131 @@ void perfil(Grafo* G, int indexLogado){
 				menuSecundario();
 				break;
 
-			case 7:	// deslogar
+			case 7:	// mostrar pessoas que talvez o usuario logado conheca
+				recomendaTalvezConheca(G, F, indexLogado);
+				menuSecundario();
+				break;
+
+			case 8:	// deslogar
 				return;
 				break;
 
 		}
 		scanf("%d", &instrucaoPerfil);
 	}
-
 }
 
-void criaTeste(Grafo* G){
-	G->numV = 4;
-	G->rede[0].index = 0;
-	strcpy(G->rede[0].nomeUsuario, "g");
-	G->rede[0].idade = 1;
-	G->rede[0].sexo = MASCULINO;
-	strcpy(G->rede[0].cidade, "g");
-	strcpy(G->rede[0].filmePreferido, "g");
-	strcpy(G->rede[0].time, "g");
-	G->rede[0].interesseEm = 0;
-	strcpy(G->rede[0].senha, "g");
+int randomizar(int n){
+	return rand() % n;
+}
+
+void criaTesteRand(Grafo* G, int n){
+	int i;
+	for (i = 0; i < n; i++){
+		G->rede[i].index = i;
+		G->rede[i].idade = randomizar(99);
+		G->rede[i].sexo = randomizar(4);
+		strcpy(G->rede[i].cidade, CIDADES[randomizar(6)]);
+		strcpy(G->rede[i].filmePreferido, FILMES[randomizar(6)]);
+		strcpy(G->rede[i].time, TIMES[randomizar(6)]);
+		G->rede[0].interesseEm = randomizar(6);
+
+	}
+	G->numV = i+1;
+
+	for(int i = 0 ; i < G->numV; i++){
+		for(int j = 0; j < G->numV; j++){
+			int n = (rand() % 100) - 1;
+			if(n < 11 && n >= -1)
+				G->adj[i][j] = n;
+			else
+				G->adj[i][j] = -1;
+		}
+	}
+}
+
+void criaTeste(Grafo* G, int n){
+	criaTesteRand(G, n);
+
+	strcpy(G->rede[0].nomeUsuario, "Adelio");
+	strcpy(G->rede[0].senha, "adelio123");
+
+	strcpy(G->rede[1].nomeUsuario, "Bruno");
+	strcpy(G->rede[1].senha, "bruno123");
+
+	strcpy(G->rede[2].nomeUsuario, "Carlos");
+	strcpy(G->rede[2].senha, "carlos123");
+
+	strcpy(G->rede[3].nomeUsuario, "Drauzio");
+	strcpy(G->rede[3].senha, "drauzio123");
+
+	strcpy(G->rede[4].nomeUsuario, "Enrico");
+	strcpy(G->rede[4].senha, "enrico123");
+
+	strcpy(G->rede[5].nomeUsuario, "Fabiana");
+	strcpy(G->rede[5].senha, "fabiana123");
+
+	strcpy(G->rede[6].nomeUsuario, "Giovani");
+	strcpy(G->rede[6].senha, "giovani123");
+
+	strcpy(G->rede[7].nomeUsuario, "Henrique");
+	strcpy(G->rede[7].senha, "henrique123");
+
+	strcpy(G->rede[8].nomeUsuario, "Iris");
+	strcpy(G->rede[8].senha, "iris123");
+
+	strcpy(G->rede[9].nomeUsuario, "Joana");
+	strcpy(G->rede[9].senha, "joana123");
+
+	strcpy(G->rede[10].nomeUsuario, "Karla");
+	strcpy(G->rede[10].senha, "karla123");
+
+	strcpy(G->rede[11].nomeUsuario, "Luis");
+	strcpy(G->rede[11].senha, "luis123");
+
+	strcpy(G->rede[12].nomeUsuario, "Mario");
+	strcpy(G->rede[12].senha, "mario123");
+
+	strcpy(G->rede[13].nomeUsuario, "Natasha");
+	strcpy(G->rede[13].senha, "natasha123");
+
+	strcpy(G->rede[14].nomeUsuario, "Olga");
+	strcpy(G->rede[14].senha, "olga123");
+
+	strcpy(G->rede[15].nomeUsuario, "Pedro");
+	strcpy(G->rede[15].senha, "pedro123");
+
+	strcpy(G->rede[16].nomeUsuario, "Quincas");
+	strcpy(G->rede[16].senha, "quincas123");
+
+	strcpy(G->rede[17].nomeUsuario, "Ricardo");
+	strcpy(G->rede[17].senha, "ricardo123");
+
+	strcpy(G->rede[18].nomeUsuario, "Samanta");
+	strcpy(G->rede[18].senha, "samanta123");
+
+	strcpy(G->rede[19].nomeUsuario, "Tulio");
+	strcpy(G->rede[19].senha, "tulio123");
+
+	strcpy(G->rede[20].nomeUsuario, "Ursula");
+	strcpy(G->rede[20].senha, "ursula123");
+
+	strcpy(G->rede[21].nomeUsuario, "Victor");
+	strcpy(G->rede[21].senha, "victor123");
+
+	strcpy(G->rede[22].nomeUsuario, "Wesley");
+	strcpy(G->rede[22].senha, "wesley123");
+
+	strcpy(G->rede[23].nomeUsuario, "Xuxa");
+	strcpy(G->rede[23].senha, "xuxa123");
+
+	strcpy(G->rede[24].nomeUsuario, "Yolanda");
+	strcpy(G->rede[24].senha, "yolanda123");
+
+	strcpy(G->rede[25].nomeUsuario, "Zelia");
+	strcpy(G->rede[25].senha, "zelia123");
 
 
-	G->rede[1].index = 1;
-	strcpy(G->rede[1].nomeUsuario, "h");
-	G->rede[1].idade = 70;
-	G->rede[1].sexo = FEMININO;
-	strcpy(G->rede[1].cidade, "h");
-	strcpy(G->rede[1].filmePreferido, "h");
-	strcpy(G->rede[1].time, "h");
-	G->rede[1].interesseEm = 1;
-	strcpy(G->rede[1].senha, "h");
-
-	G->rede[2].index = 2;
-	strcpy(G->rede[2].nomeUsuario, "c");
-	G->rede[2].idade = 1;
-	G->rede[2].sexo = MASCULINO;
-	strcpy(G->rede[2].cidade, "g");
-	strcpy(G->rede[2].filmePreferido, "g");
-	strcpy(G->rede[2].time, "g");
-	G->rede[2].interesseEm = 0;
-	strcpy(G->rede[2].senha, "c");
-
-	G->rede[3].index = 3;
-	strcpy(G->rede[3].nomeUsuario, "d");
-	G->rede[3].idade = 1;
-	G->rede[3].sexo = MASCULINO;
-	strcpy(G->rede[3].cidade, "g");
-	strcpy(G->rede[3].filmePreferido, "g");
-	strcpy(G->rede[3].time, "g");
-	G->rede[3].interesseEm = 0;
-	strcpy(G->rede[3].senha, "d");
 
 
 }
@@ -523,14 +672,22 @@ void criaTeste(Grafo* G){
 int main(){
 
 	Grafo* G;
+	Fila* F;
+
 	G = criaGrafo();
+	F = criaFila();
+
+	if(F == NULL) return 1;
+
 	int instrucao, indexLogado;
 	int logou = 0;
 	menuInicial();
 
 	//carregar banco de dados
 
-	//criaTeste(G);
+	criaTeste(G,25);
+
+	//printaUsuario(G->rede[13]);
 	scanf("%d", &instrucao);
 	while(instrucao < 2){
 		switch (instrucao){
@@ -545,14 +702,17 @@ int main(){
 					printf("Senha incorreta. Tente novamente\n");
 				}
 				logou++;
-				perfil(G, indexLogado);
+				perfil(G, F, indexLogado);
 				menuInicial();
 				break;
-			case 2:
-				printf("Sair;");
+			case 2:// sair
+				printf("Sair");
+				return 0;
+				break;
 		}
 		scanf("%d", &instrucao);
 	}
 
+	liberaFila(F);
 	liberaGrafo(G);
 }
