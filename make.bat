@@ -1,1 +1,1 @@
-gcc redesocial.c -o exec -g
+gcc main.c redesocial.c fila.c -o exec -g
